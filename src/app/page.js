@@ -1,27 +1,19 @@
 "use client";
-import users_list from "@/api/users";
-import AutoCompleteCustom from "@/components/AutoCompleteCustom";
+import getUsers from "@/api/users";
+import CustomAutoComplete from "@/components/CustomAutoComplete";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, TextField } from "@mui/material";
 import { FormProvider, useForm } from "react-hook-form";
+import { IMaskMixin } from "react-imask";
 import { z } from "zod";
 
 const schema = z.object({
   pessoa: z.number(),
-  telefone: z
-    .string()
-    .min(11, { message: "Número inválido, mín. 11 dígitos" })
-    .max(15, { message: "Número inválido, máx. 15 dígitos" }),
+  telefone: z.string().refine((data) => /\(\d{2}\) \d{4,5}-\d{4}/.test(data), {
+    message: "Telefone inválido",
+  }),
   email: z.string().email("Email inválido"),
 });
-
-const getList = async () => {
-  return await new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(users_list);
-    }, 1000);
-  });
-};
 
 export default function Home() {
   const methods = useForm({
@@ -31,6 +23,10 @@ export default function Home() {
   const { errors } = methods.formState;
 
   const onSubmit = (data) => console.log(data);
+
+  const MaskTextField = IMaskMixin(({ ...props }) => (
+    <TextField {...props} {...methods.register(props?.name)} />
+  ));
 
   return (
     <main>
@@ -43,20 +39,22 @@ export default function Home() {
             <h1 className="text-center mb-5 font-bold text-2xl uppercase">
               Cadastro
             </h1>
-            <AutoCompleteCustom
-              id="user-name"
+            <CustomAutoComplete
+              id="pessoa_nome"
               name="pessoa"
               label="Nome"
-              getMethod={getList}
+              getMethod={getUsers}
+              noOptionsText="Nenhum resultado encontrado"
               required
-            ></AutoCompleteCustom>
-            <TextField
+            ></CustomAutoComplete>
+            <MaskTextField
               className="mt-5 w-full"
               label="Telefone"
-              placeholder="(00) 00000-0000"
+              mask="(00) 00000-0000"
+              lazy={false}
+              name="telefone"
               required
-              {...methods.register("telefone")}
-            ></TextField>
+            ></MaskTextField>
             {errors.telefone && (
               <p className=" text-red-500">{errors.telefone.message}</p>
             )}
